@@ -196,7 +196,7 @@ testBoth('chain observer on class that has a reference to an uninitialized objec
     }
   });
 
-  let parent = new ParentClass();
+  let parent = ParentClass.create();
 
   assert.equal(changed, false, 'precond');
 

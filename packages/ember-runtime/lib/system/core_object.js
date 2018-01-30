@@ -54,7 +54,7 @@ function makeCtor() {
   // possible.
 
   let wasApplied = false;
-  let initProperties, initFactory;
+  let initFactory;
 
   class Class {
     constructor() {
@@ -64,153 +64,10 @@ function makeCtor() {
         Class.proto(); // prepare prototype...
       }
 
-      if (arguments.length > 0) {
-        initProperties = [arguments[0]];
-      }
-
-      let before = true;
-
-      if (MANDATORY_GETTER && EMBER_METAL_ES5_GETTERS && HAS_NATIVE_PROXY && typeof self.unknownProperty === 'function') {
-        let messageFor = (obj, property) => {
-          return `You attempted to access the \`${String(property)}\` property (of ${obj}).\n` +
-            `Since Ember 3.1, this is usually fine as you no longer need to use \`.get()\`\n` +
-            `to access computed properties. However, in this case, the object in question\n` +
-            `is a special kind of Ember object (a proxy). Therefore, it is still necessary\n` +
-            `to use \`.get('${String(property)}')\` in this case.\n\n` +
-            `If you encountered this error because of third-party code that you don't control,\n` +
-            `there is more information at https://github.com/emberjs/ember.js/issues/16148, and\n` +
-            `you can help us improve this error message by telling us more about what happened in\n` +
-            `this situation.`;
-          };
-
-        /* globals Proxy Reflect */
-        self = new Proxy(this, {
-          get(target, property, receiver) {
-            if (property === PROXY_CONTENT) {
-              return target;
-            } else if (before ||
-                      typeof property === 'symbol' ||
-                      property === NAME_KEY ||
-                      property === GUID_KEY_PROPERTY ||
-                      property === 'toJSON' ||
-                      property === 'toString' ||
-                      property === 'toStringExtension' || property in target) {
-              return Reflect.get(target, property, receiver);
-            }
-
-            let value = target.unknownProperty.call(receiver, property);
-
-            assert(messageFor(receiver, property), value === undefined);
-          }
-        });
-      }
-
-      self.__defineNonEnumerable(GUID_KEY_PROPERTY);
-      let m = meta(self);
-      let proto = m.proto;
-      m.proto = self;
-
       if (initFactory) {
         FACTORY_FOR.set(this, initFactory);
         initFactory = null;
       }
-      if (initProperties) {
-        // capture locally so we can clear the closed over variable
-        let props = initProperties;
-        initProperties = null;
-
-        let concatenatedProperties = self.concatenatedProperties;
-        let mergedProperties = self.mergedProperties;
-        let hasConcatenatedProps = concatenatedProperties && concatenatedProperties.length > 0;
-        let hasMergedProps = mergedProperties && mergedProperties.length > 0;
-
-        for (let i = 0; i < props.length; i++) {
-          let properties = props[i];
-
-          assert(
-            'EmberObject.create only accepts objects.',
-            typeof properties === 'object' || properties === undefined
-          );
-
-          assert(
-            'EmberObject.create no longer supports mixing in other ' +
-            'definitions, use .extend & .create separately instead.',
-            !(properties instanceof Mixin)
-          );
-
-          if (!properties) { continue; }
-
-          let keyNames = Object.keys(properties);
-
-          for (let j = 0; j < keyNames.length; j++) {
-            let keyName = keyNames[j];
-            let value = properties[keyName];
-
-            if (ENV._ENABLE_BINDING_SUPPORT && Mixin.detectBinding(keyName)) {
-              m.writeBindings(keyName, value);
-            }
-
-            assert(
-              'EmberObject.create no longer supports defining computed ' +
-              'properties. Define computed properties using extend() or reopen() ' +
-              'before calling create().',
-              !(value instanceof ComputedProperty)
-            );
-            assert(
-              'EmberObject.create no longer supports defining methods that call _super.',
-              !(typeof value === 'function' && value.toString().indexOf('._super') !== -1)
-            );
-            assert(
-              '`actions` must be provided at extend time, not at create time, ' +
-              'when ActionHandler is used (i.e. views, controllers & routes).',
-              !((keyName === 'actions') && ActionHandler.detect(this))
-            );
-
-            let possibleDesc = descriptorFor(self, keyName, m);
-            let isDescriptor = possibleDesc !== undefined;
-
-            if (!isDescriptor) {
-              let baseValue = self[keyName];
-
-              if (hasConcatenatedProps && concatenatedProperties.indexOf(keyName) > -1) {
-                if (baseValue) {
-                  value = makeArray(baseValue).concat(value);
-                } else {
-                  value = makeArray(value);
-                }
-              }
-
-              if (hasMergedProps && mergedProperties.indexOf(keyName) > -1) {
-                value = assign({}, baseValue, value);
-              }
-            }
-
-            if (isDescriptor) {
-              possibleDesc.set(self, keyName, value);
-            } else if (typeof self.setUnknownProperty === 'function' && !(keyName in self)) {
-              self.setUnknownProperty(keyName, value);
-            } else {
-              if (MANDATORY_SETTER) {
-                defineProperty(self, keyName, null, value); // setup mandatory setter
-              } else {
-                self[keyName] = value;
-              }
-            }
-          }
-        }
-      }
-
-      if (ENV._ENABLE_BINDING_SUPPORT) {
-        Mixin.finishPartial(self, m);
-      }
-      before = false;
-      self.init(...arguments);
-
-      self[POST_INIT]();
-
-      m.proto = proto;
-      finishChains(m);
-      sendEvent(self, 'init', undefined, undefined, undefined, m);
 
       return self;
     }
@@ -223,7 +80,6 @@ function makeCtor() {
       wasApplied = false;
     }
 
-    static _initProperties(args) { initProperties = args; }
     static _initFactory(factory) { initFactory = factory; }
 
     static proto() {
@@ -762,13 +618,150 @@ let ClassMixinProps = {
     @param [arguments]*
     @public
   */
-  create(...args) {
-    let C = this;
-    if (args.length > 0) {
-      this._initProperties(args);
+  create(...initProperties) {
+    let instance = new this();
+
+    let before = true;
+
+    if (MANDATORY_GETTER && EMBER_METAL_ES5_GETTERS && HAS_NATIVE_PROXY && typeof instance.unknownProperty === 'function') {
+      let messageFor = (obj, property) => {
+        return `You attempted to access the \`${String(property)}\` property (of ${obj}).\n` +
+          `Since Ember 3.1, this is usually fine as you no longer need to use \`.get()\`\n` +
+          `to access computed properties. However, in this case, the object in question\n` +
+          `is a special kind of Ember object (a proxy). Therefore, it is still necessary\n` +
+          `to use \`.get('${String(property)}')\` in this case.\n\n` +
+          `If you encountered this error because of third-party code that you don't control,\n` +
+          `there is more information at https://github.com/emberjs/ember.js/issues/16148, and\n` +
+          `you can help us improve this error message by telling us more about what happened in\n` +
+          `this situation.`;
+        };
+
+      /* globals Proxy Reflect */
+      instance = new Proxy(instance, {
+        get(target, property, receiver) {
+          if (property === PROXY_CONTENT) {
+            return target;
+          } else if (before ||
+                    typeof property === 'symbol' ||
+                    property === NAME_KEY ||
+                    property === GUID_KEY_PROPERTY ||
+                    property === 'toJSON' ||
+                    property === 'toString' ||
+                    property === 'toStringExtension' || property in target) {
+            return Reflect.get(target, property, receiver);
+          }
+
+          let value = target.unknownProperty.call(receiver, property);
+
+          assert(messageFor(receiver, property), value === undefined);
+        }
+      });
     }
 
-    return new C();
+    instance.__defineNonEnumerable(GUID_KEY_PROPERTY);
+    let m = meta(instance);
+    let proto = m.proto;
+    m.proto = instance;
+
+    if (initProperties) {
+      // capture locally so we can clear the closed over variable
+      let props = initProperties;
+      initProperties = null;
+
+      let concatenatedProperties = instance.concatenatedProperties;
+      let mergedProperties = instance.mergedProperties;
+      let hasConcatenatedProps = concatenatedProperties && concatenatedProperties.length > 0;
+      let hasMergedProps = mergedProperties && mergedProperties.length > 0;
+
+      for (let i = 0; i < props.length; i++) {
+        let properties = props[i];
+
+        assert(
+          'EmberObject.create only accepts objects.',
+          typeof properties === 'object' || properties === undefined
+        );
+
+        assert(
+          'EmberObject.create no longer supports mixing in other ' +
+          'definitions, use .extend & .create separately instead.',
+          !(properties instanceof Mixin)
+        );
+
+        if (!properties) { continue; }
+
+        let keyNames = Object.keys(properties);
+
+        for (let j = 0; j < keyNames.length; j++) {
+          let keyName = keyNames[j];
+          let value = properties[keyName];
+
+          if (ENV._ENABLE_BINDING_SUPPORT && Mixin.detectBinding(keyName)) {
+            m.writeBindings(keyName, value);
+          }
+
+          assert(
+            'EmberObject.create no longer supports defining computed ' +
+            'properties. Define computed properties using extend() or reopen() ' +
+            'before calling create().',
+            !(value instanceof ComputedProperty)
+          );
+          assert(
+            'EmberObject.create no longer supports defining methods that call _super.',
+            !(typeof value === 'function' && value.toString().indexOf('._super') !== -1)
+          );
+          assert(
+            '`actions` must be provided at extend time, not at create time, ' +
+            'when ActionHandler is used (i.e. views, controllers & routes).',
+            !((keyName === 'actions') && ActionHandler.detect(instance))
+          );
+
+          let possibleDesc = descriptorFor(instance, keyName, m);
+          let isDescriptor = possibleDesc !== undefined;
+
+          if (!isDescriptor) {
+            let baseValue = instance[keyName];
+
+            if (hasConcatenatedProps && concatenatedProperties.indexOf(keyName) > -1) {
+              if (baseValue) {
+                value = makeArray(baseValue).concat(value);
+              } else {
+                value = makeArray(value);
+              }
+            }
+
+            if (hasMergedProps && mergedProperties.indexOf(keyName) > -1) {
+              value = assign({}, baseValue, value);
+            }
+          }
+
+          if (isDescriptor) {
+            possibleDesc.set(instance, keyName, value);
+          } else if (typeof instance.setUnknownProperty === 'function' && !(keyName in instance)) {
+            instance.setUnknownProperty(keyName, value);
+          } else {
+            if (MANDATORY_SETTER) {
+              defineProperty(instance, keyName, null, value); // setup mandatory setter
+            } else {
+              instance[keyName] = value;
+            }
+          }
+        }
+      }
+    }
+
+    if (ENV._ENABLE_BINDING_SUPPORT) {
+      Mixin.finishPartial(instance, m);
+    }
+    before = false;
+    instance.init(...arguments);
+
+    instance[POST_INIT]();
+
+    m.proto = proto;
+    finishChains(m);
+    sendEvent(instance, 'init', undefined, undefined, undefined, m);
+
+    return instance;
   },
 
   /**
