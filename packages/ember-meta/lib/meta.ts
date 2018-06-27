@@ -51,7 +51,6 @@ export class Meta {
   _flags: number;
   source: object;
   proto: object | undefined;
-  _parent: Meta | undefined | null;
   _listeners: any | undefined;
   _listenersFinalized: boolean;
 
@@ -64,7 +63,6 @@ export class Meta {
       counters!.metaInstantiated++;
       this._values = undefined;
     }
-    this._parent = undefined;
     this._descriptors = undefined;
     this._watching = undefined;
     this._mixins = undefined;
@@ -93,12 +91,9 @@ export class Meta {
   }
 
   get parent() {
-    let parent = this._parent;
-    if (parent === undefined) {
-      let proto = getPrototypeOf(this.source);
-      this._parent = parent = proto === null || proto === objectPrototype ? null : meta(proto);
-    }
-    return parent;
+    let proto = getPrototypeOf(this.source);
+
+    return proto === null || proto === objectPrototype ? undefined : peekMeta(proto);
   }
 
   isInitialized(obj: object) {
@@ -155,8 +150,8 @@ export class Meta {
   }
 
   _getInherited(key: string) {
-    let pointer: Meta | null = this;
-    while (pointer !== null) {
+    let pointer: Meta | undefined = this;
+    while (pointer !== undefined) {
       let map = pointer[key];
       if (map !== undefined) {
         return map;
@@ -166,8 +161,8 @@ export class Meta {
   }
 
   _findInherited(key: string, subkey: string): any | undefined {
-    let pointer: Meta | null = this;
-    while (pointer !== null) {
+    let pointer: Meta | undefined = this;
+    while (pointer !== undefined) {
       let map = pointer[key];
       if (map !== undefined) {
         let value = map[subkey];
@@ -180,8 +175,8 @@ export class Meta {
   }
 
   _hasInInheritedSet(key: string, value: any) {
-    let pointer: Meta | null = this;
-    while (pointer !== null) {
+    let pointer: Meta | undefined = this;
+    while (pointer !== undefined) {
       let set = pointer[key];
       if (set !== undefined) {
         if (set.has(value)) {
@@ -214,8 +209,8 @@ export class Meta {
   }
 
   peekDeps(subkey: string, itemkey: string): number {
-    let pointer: Meta | null = this;
-    while (pointer !== null) {
+    let pointer: Meta | undefined = this;
+    while (pointer !== undefined) {
       let map = pointer._deps;
       if (map !== undefined) {
         let value = map[subkey];
@@ -233,8 +228,8 @@ export class Meta {
   }
 
   hasDeps(subkey: string) {
-    let pointer: Meta | null = this;
-    while (pointer !== null) {
+    let pointer: Meta | undefined = this;
+    while (pointer !== undefined) {
       let deps = pointer._deps;
       if (deps !== undefined && deps[subkey] !== undefined) {
         return true;
@@ -249,10 +244,10 @@ export class Meta {
   }
 
   _forEachIn(key: string, subkey: string, fn: Function) {
-    let pointer: Meta | null = this;
+    let pointer: Meta | undefined = this;
     let seen: Set<any> | undefined;
     let calls: any[] | undefined;
-    while (pointer !== null) {
+    while (pointer !== undefined) {
       let map = pointer[key];
       if (map !== undefined) {
         let innerMap = map[subkey];
@@ -331,7 +326,7 @@ export class Meta {
     );
     let ret = this._chains;
     if (ret === undefined) {
-      if (this.parent === null) {
+      if (this.parent === undefined) {
         ret = create(this.source);
       } else {
         ret = this.parent.writableChains(create).copy(this.source);
@@ -381,9 +376,9 @@ export class Meta {
   }
 
   forEachMixins(fn: Function) {
-    let pointer: Meta | null = this;
+    let pointer: Meta | undefined = this;
     let seen: Set<any> | undefined;
-    while (pointer !== null) {
+    while (pointer !== undefined) {
       let set = pointer._mixins;
       if (set !== undefined) {
         seen = seen === undefined ? new Set() : seen;
@@ -422,9 +417,9 @@ export class Meta {
   }
 
   forEachDescriptors(fn: Function) {
-    let pointer: Meta | null = this;
+    let pointer: Meta | undefined = this;
     let seen: Set<any> | undefined;
-    while (pointer !== null) {
+    while (pointer !== undefined) {
       let map = pointer._descriptors;
       if (map !== undefined) {
         for (let key in map) {
@@ -462,7 +457,7 @@ export class Meta {
       this._listeners = [];
     }
     let pointer = this.parent;
-    while (pointer !== null) {
+    while (pointer !== undefined) {
       let listeners = pointer._listeners;
       if (listeners !== undefined) {
         this._listeners = this._listeners.concat(listeners);
@@ -476,8 +471,8 @@ export class Meta {
   }
 
   removeFromListeners(eventName: string, target: any, method: Function | string): void {
-    let pointer: Meta | null = this;
-    while (pointer !== null) {
+    let pointer: Meta | undefined = this;
+    while (pointer !== undefined) {
       let listeners = pointer._listeners;
       if (listeners !== undefined) {
         for (let index = listeners.length - 4; index >= 0; index -= 4) {
@@ -505,10 +500,10 @@ export class Meta {
   }
 
   matchingListeners(eventName: string) {
-    let pointer: Meta | null = this;
+    let pointer: Meta | undefined = this;
     // fix type
     let result: any[] | undefined;
-    while (pointer !== null) {
+    while (pointer !== undefined) {
       let listeners = pointer._listeners;
       if (listeners !== undefined) {
         for (let index = 0; index < listeners.length; index += 4) {
@@ -559,9 +554,9 @@ if (BINDING_SUPPORT && ENV._ENABLE_BINDING_SUPPORT) {
   };
 
   Meta.prototype.forEachBindings = function(fn: Function) {
-    let pointer: Meta | null = this;
+    let pointer: Meta | undefined = this;
     let seen: { [key: string]: any } | undefined;
-    while (pointer !== null) {
+    while (pointer !== undefined) {
       let map = pointer._bindings;
       if (map !== undefined) {
         for (let key in map) {
@@ -614,9 +609,9 @@ if (DEBUG) {
   Meta.prototype.readInheritedValue = function(key, subkey) {
     let internalKey = `_${key}`;
 
-    let pointer: Meta | null = this;
+    let pointer: Meta | undefined = this;
 
-    while (pointer !== null) {
+    while (pointer !== undefined) {
       let map = pointer[internalKey];
       if (map !== undefined) {
         let value = map[subkey];
