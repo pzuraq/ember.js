@@ -13,7 +13,7 @@ moduleFor('ember-testing QUnitAdapter: QUnit 2.x', class extends AbstractTestCas
     delete QUnit.start;
     delete QUnit.stop;
 
-    adapter = new QUnitAdapter();
+    adapter = QUnitAdapter.create();
   }
 
   teardown() {

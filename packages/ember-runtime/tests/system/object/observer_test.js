@@ -13,7 +13,7 @@ testBoth('observer on class', function(get, set, assert) {
     })
   });
 
-  let obj = new MyClass();
+  let obj = MyClass.create();
   assert.equal(get(obj, 'count'), 0, 'should not invoke observer immediately');
 
   set(obj, 'bar', 'BAZ');
@@ -35,7 +35,7 @@ testBoth('observer on subclass', function(get, set, assert) {
     })
   });
 
-  let obj = new Subclass();
+  let obj = Subclass.create();
   assert.equal(get(obj, 'count'), 0, 'should not invoke observer immediately');
 
   set(obj, 'bar', 'BAZ');
@@ -196,7 +196,7 @@ testBoth('chain observer on class that has a reference to an uninitialized objec
     }
   });
 
-  let parent = new ParentClass();
+  let parent = ParentClass.create();
 
   assert.equal(changed, false, 'precond');
 

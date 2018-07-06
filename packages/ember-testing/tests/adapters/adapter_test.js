@@ -7,7 +7,7 @@ var adapter;
 moduleFor('ember-testing Adapter', class extends AbstractTestCase {
   constructor() {
     super();
-    adapter = new Adapter();
+    adapter = Adapter.create();
   }
 
   teardown() {

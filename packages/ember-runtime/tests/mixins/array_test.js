@@ -63,7 +63,7 @@ QUnit.test('the return value of slice has Ember.Array applied', function(assert)
 });
 
 QUnit.test('slice supports negative index arguments', function(assert) {
-  let testArray = new TestArray({ _content: [1, 2, 3, 4] });
+  let testArray = TestArray.create({ _content: [1, 2, 3, 4] });
 
   assert.deepEqual(testArray.slice(-2), [3, 4], 'slice(-2)');
   assert.deepEqual(testArray.slice(-2, -1), [3], 'slice(-2, -1');
@@ -234,7 +234,7 @@ let ary;
 
 QUnit.module('EmberArray.@each support', {
   beforeEach() {
-    ary = new TestArray({
+    ary = TestArray.create({
       _content: [
         { isDone: true, desc: 'Todo 1' },
         { isDone: false, desc: 'Todo 2' },

@@ -163,7 +163,7 @@ class CopyableNativeArray extends AbstractArrayHelper {
 
 class CopyableArray extends AbstractArrayHelper {
   newObject() {
-    return new CopyableObject();
+    return CopyableObject.create();
   }
 
   isEqual(a, b) {
@@ -273,7 +273,7 @@ const CopyableObject = EmberObject.extend(Copyable, {
   },
 
   copy() {
-    let ret = new CopyableObject();
+    let ret = CopyableObject.create();
     set(ret, 'id', get(this, 'id'));
     return ret;
   }
@@ -281,7 +281,7 @@ const CopyableObject = EmberObject.extend(Copyable, {
 
 class MutableArrayHelpers extends NativeArrayHelpers {
   newObject(ary) {
-    return new TestMutableArray(super.newObject(ary));
+    return TestMutableArray.create(super.newObject(ary));
   }
 
   // allows for testing of the basic enumerable after an internal mutation
@@ -292,7 +292,7 @@ class MutableArrayHelpers extends NativeArrayHelpers {
 
 class EmberArrayHelpers extends MutableArrayHelpers {
   newObject(ary) {
-    return new TestArray(super.newObject(ary));
+    return TestArray.create(super.newObject(ary));
   }
 }
 

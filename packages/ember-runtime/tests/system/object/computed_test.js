@@ -16,7 +16,7 @@ testWithDefault('computed property on instance', function(get, set, assert) {
     foo: computed(function() { return 'FOO'; })
   });
 
-  assert.equal(get(new MyClass(), 'foo'), 'FOO');
+  assert.equal(get(MyClass.create(), 'foo'), 'FOO');
 });
 
 
@@ -29,7 +29,7 @@ testWithDefault('computed property on subclass', function(get, set, assert) {
     foo: computed(function() { return 'BAR'; })
   });
 
-  assert.equal(get(new Subclass(), 'foo'), 'BAR');
+  assert.equal(get(Subclass.create(), 'foo'), 'BAR');
 });
 
 
@@ -42,7 +42,7 @@ testWithDefault('replacing computed property with regular val', function(get, se
     foo: 'BAR'
   });
 
-  assert.equal(get(new Subclass(), 'foo'), 'BAR');
+  assert.equal(get(Subclass.create(), 'foo'), 'BAR');
 });
 
 testWithDefault('complex depndent keys', function(get, set, assert) {
@@ -66,8 +66,8 @@ testWithDefault('complex depndent keys', function(get, set, assert) {
     count: 20
   });
 
-  let obj1 = new MyClass();
-  let obj2 = new Subclass();
+  let obj1 = MyClass.create();
+  let obj2 = Subclass.create();
 
   assert.equal(get(obj1, 'foo'), 'BIFF 1');
   assert.equal(get(obj2, 'foo'), 'BIFF 21');
@@ -112,7 +112,7 @@ testWithDefault('complex dependent keys changing complex dependent keys', functi
     }).property('bar2.baz')
   });
 
-  let obj2 = new Subclass();
+  let obj2 = Subclass.create();
 
   assert.equal(get(obj2, 'foo'), 'BIFF2 1');
 

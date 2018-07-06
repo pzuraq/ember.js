@@ -28,7 +28,7 @@ QUnit.test('extending an Ember.Object', function(assert) {
   assert.equal(myObject.passedProperty, 'passed-property', 'passed property available on instance (create)');
 
   calls = [];
-  myObject = new MyObject({ passedProperty: 'passed-property' });
+  myObject = MyObject.create({ passedProperty: 'passed-property' });
 
   assert.deepEqual(calls, ['constructor', 'init'], 'constructor then init called (new)');
   assert.equal(myObject.postInitProperty, 'post-init-property', 'constructor property available on instance (new)');
@@ -59,7 +59,7 @@ QUnit.test('using super', function(assert) {
     }
   }
 
-  let myObject = new MyObject();
+  let myObject = MyObject.create();
   myObject.method();
 
   assert.deepEqual(calls, [
@@ -80,7 +80,7 @@ QUnit.test('using mixins', function(assert) {
 
   class MyObject extends EmberObject.extend(Mixin1, Mixin2) {}
 
-  let myObject = new MyObject();
+  let myObject = MyObject.create();
   assert.equal(myObject.property1, 'data-1', 'includes the first mixin');
   assert.equal(myObject.property2, 'data-2', 'includes the second mixin');
 });
@@ -89,7 +89,7 @@ QUnit.test('using instanceof', function(assert) {
   class MyObject extends EmberObject {}
 
   let myObject1 = MyObject.create();
-  let myObject2 = new MyObject();
+  let myObject2 = MyObject.create();
 
   assert.ok(myObject1 instanceof MyObject);
   assert.ok(myObject1 instanceof EmberObject);
@@ -119,7 +119,7 @@ QUnit.test('extending an ES subclass of EmberObject', function(assert) {
   assert.deepEqual(calls, ['constructor', 'init'], 'constructor then init called (create)');
 
   calls = [];
-  new MyObject();
+  MyObject.create();
   assert.deepEqual(calls, ['constructor', 'init'], 'constructor then init called (new)');
 });
 
@@ -145,6 +145,6 @@ QUnit.skip('calling extend on an ES subclass of EmberObject', function(assert) {
   assert.deepEqual(calls, ['constructor', 'init'], 'constructor then init called (create)');
 
   calls = [];
-  new MyObject();
+  MyObject.create();
   assert.deepEqual(calls, ['constructor', 'init'], 'constructor then init called (new)');
 });

@@ -10,8 +10,8 @@ QUnit.test('adds new properties to subclass instance', function(assert) {
     bar: 'BAR'
   });
 
-  assert.equal(new Subclass().foo(), 'FOO', 'Adds method');
-  assert.equal(get(new Subclass(), 'bar'), 'BAR', 'Adds property');
+  assert.equal(Subclass.create().foo(), 'FOO', 'Adds method');
+  assert.equal(get(Subclass.create(), 'bar'), 'BAR', 'Adds property');
 });
 
 QUnit.test('reopened properties inherited by subclasses', function(assert) {
@@ -23,8 +23,8 @@ QUnit.test('reopened properties inherited by subclasses', function(assert) {
     bar: 'BAR'
   });
 
-  assert.equal(new SubSub().foo(), 'FOO', 'Adds method');
-  assert.equal(get(new SubSub(), 'bar'), 'BAR', 'Adds property');
+  assert.equal(SubSub.create().foo(), 'FOO', 'Adds method');
+  assert.equal(get(SubSub.create(), 'bar'), 'BAR', 'Adds property');
 });
 
 QUnit.test('allows reopening already instantiated classes', function(assert) {
