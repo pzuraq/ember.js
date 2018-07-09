@@ -12,6 +12,9 @@ import {
   removeChainWatcher
 } from './chains';
 
+const getPrototypeOf = Object.getPrototypeOf;
+const objectPrototype = Object.prototype;
+
 let counters;
 if (DEBUG) {
   counters = {
@@ -41,11 +44,12 @@ const META_FIELD = '__ember_meta__';
 const NODE_STACK = [];
 
 export class Meta {
-  constructor(obj, parentMeta) {
+  constructor(obj) {
     if (DEBUG) {
       counters.metaInstantiated++;
     }
 
+    this._parent = undefined;
     this._cache = undefined;
     this._weak = undefined;
     this._watching = undefined;
@@ -68,17 +72,20 @@ export class Meta {
 
     // when meta(obj).proto === obj, the object is intended to be only a
     // prototype and doesn't need to actually be observable itself
-    this.proto = undefined;
-
-    // The next meta in our inheritance chain. We (will) track this
-    // explicitly instead of using prototypical inheritance because we
-    // have detailed knowledge of how each property should really be
-    // inherited, and we can optimize it much better than JS runtimes.
-    this.parent = parentMeta;
+    this.proto = obj.constructor === undefined ? undefined : obj.constructor.prototype;
 
     this._listeners = undefined;
     this._listenersFinalized = false;
     this._suspendedListeners = undefined;
+  }
+
+  get parent() {
+    let parent = this._parent;
+    if (parent === null) {
+      let proto = getPrototypeOf(this.source);
+      this._parent = parent = proto === null || proto === objectPrototype ? null : meta(proto);
+    }
+    return parent;
   }
 
   isInitialized(obj) {
@@ -165,7 +172,7 @@ export class Meta {
 
   _getInherited(key) {
     let pointer = this;
-    while (pointer !== undefined) {
+    while (pointer !== null) {
       let map = pointer[key];
       if (map !== undefined) {
         return map;
@@ -176,7 +183,7 @@ export class Meta {
 
   _findInherited(key, subkey) {
     let pointer = this;
-    while (pointer !== undefined) {
+    while (pointer !== null) {
       let map = pointer[key];
       if (map !== undefined) {
         let value = map[subkey];
@@ -203,7 +210,7 @@ export class Meta {
 
   peekDeps(subkey, itemkey) {
     let pointer = this;
-    while (pointer !== undefined) {
+    while (pointer !== null) {
       let map = pointer._deps;
       if (map !== undefined) {
         let value = map[subkey];
@@ -220,7 +227,7 @@ export class Meta {
 
   hasDeps(subkey) {
     let pointer = this;
-    while (pointer !== undefined) {
+    while (pointer !== null) {
       let deps = pointer._deps;
       if (deps !== undefined && deps[subkey] !== undefined) {
         return true;
@@ -238,7 +245,7 @@ export class Meta {
     let pointer = this;
     let seen;
     let calls;
-    while (pointer !== undefined) {
+    while (pointer !== null) {
       let map = pointer[key];
       if (map !== undefined) {
         let innerMap = map[subkey];
@@ -310,7 +317,7 @@ export class Meta {
     assert(`Cannot create a new chains for \`${toString(this.source)}\` after it has been destroyed.`, !this.isMetaDestroyed());
     let ret = this._chains;
     if (ret === undefined) {
-      if (this.parent === undefined) {
+      if (this.parent === null) {
         ret = create(this.source);
       } else {
         ret = this.parent.writableChains(create).copy(this.source);
@@ -347,7 +354,7 @@ export class Meta {
   forEachMixins(fn) {
     let pointer = this;
     let seen;
-    while (pointer !== undefined) {
+    while (pointer !== null) {
       let map = pointer._mixins;
       if (map !== undefined) {
         for (let key in map) {
@@ -376,7 +383,7 @@ export class Meta {
   forEachBindings(fn) {
     let pointer = this;
     let seen;
-    while (pointer !== undefined) {
+    while (pointer !== null) {
       let map = pointer._bindings;
       if (map !== undefined) {
         for (let key in map) {
@@ -434,7 +441,7 @@ if (MANDATORY_SETTER) {
 
     let pointer = this;
 
-    while (pointer !== undefined) {
+    while (pointer !== null) {
       let map = pointer[internalKey];
       if (map !== undefined) {
         let value = map[subkey];
@@ -477,7 +484,7 @@ if (HAS_NATIVE_WEAKMAP) {
   peekMeta = function WeakMap_peekParentMeta(obj) {
     let pointer = obj;
     let meta;
-    while (pointer !== undefined && pointer !== null) {
+    while (pointer !== null && pointer !== null) {
       meta = metaStore.get(pointer);
       // jshint loopfunc:true
       if (DEBUG) {
@@ -554,17 +561,13 @@ export function meta(obj) {
   }
 
   let maybeMeta = peekMeta(obj);
-  let parent;
 
   // remove this code, in-favor of explicit parent
-  if (maybeMeta !== undefined) {
-    if (maybeMeta.source === obj) {
-      return maybeMeta;
-    }
-    parent = maybeMeta;
+  if (maybeMeta !== undefined && maybeMeta.source === obj) {
+    return maybeMeta;
   }
 
-  let newMeta = new Meta(obj, parent);
+  let newMeta = new Meta(obj);
   setMeta(obj, newMeta);
   return newMeta;
 }
