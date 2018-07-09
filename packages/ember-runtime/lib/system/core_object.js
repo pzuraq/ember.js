@@ -57,14 +57,14 @@ const DELAY_INIT = Object.freeze({});
 function initialize(obj, properties) {
   let m = meta(obj);
 
-  if (properties !== undefined) {
+  if (properties) {
     assert(
-      'EmberObject.create only accepts objects.',
+      'Ember.Object.create only accepts objects.',
       typeof properties === 'object' && properties !== null
     );
 
     assert(
-      'EmberObject.create no longer supports mixing in other ' +
+      'Ember.Object.create no longer supports mixing in other ' +
         'definitions, use .extend & .create separately instead.',
       !(properties instanceof Mixin)
     );
@@ -86,13 +86,13 @@ function initialize(obj, properties) {
       }
 
       assert(
-        'EmberObject.create no longer supports defining computed ' +
+        'Ember.Object.create no longer supports defining computed ' +
           'properties. Define computed properties using extend() or reopen() ' +
           'before calling create().',
         !(value instanceof ComputedProperty)
       );
       assert(
-        'EmberObject.create no longer supports defining methods that call _super.',
+        'Ember.Object.create no longer supports defining methods that call _super.',
         !(typeof value === 'function' && value.toString().indexOf('._super') !== -1)
       );
       assert(
@@ -155,6 +155,8 @@ class CoreObject {
     // prepare prototype...
     this.constructor.proto();
 
+    this.__defineNonEnumerable(GUID_KEY_PROPERTY);
+
     // disable chains
     let m = meta(this);
     m.proto = this;
@@ -168,7 +170,7 @@ class CoreObject {
 
     if (properties !== DELAY_INIT) {
       // deprecate(
-      //   'using `new` with EmberObject has been deprecated. Please use `create` instead.',
+      //   'using `new` with Ember.Object has been deprecated. Please use `create` instead.',
       //   false,
       //   {
       //     id: 'object.new-constructor',
@@ -192,9 +194,9 @@ class CoreObject {
     Example:
 
     ```javascript
-    import EmberObject from '@ember/object';
+    import Ember.Object from '@ember/object';
 
-    const Person = EmberObject.extend({
+    const Person = Ember.Object.extend({
       init() {
         alert(`Name is ${this.get('name')}`);
       }
@@ -233,9 +235,9 @@ class CoreObject {
     property and a normal one:
 
     ```javascript
-    import EmberObject from '@ember/object';
+    import Ember.Object from '@ember/object';
 
-    const Bar = EmberObject.extend({
+    const Bar = Ember.Object.extend({
       // Configure which properties to concatenate
       concatenatedProperties: ['concatenatedProperty'],
 
@@ -307,9 +309,9 @@ class CoreObject {
     property and a normal one:
 
     ```javascript
-    import EmberObject from '@ember/object';
+    import Ember.Object from '@ember/object';
 
-    const Bar = EmberObject.extend({
+    const Bar = Ember.Object.extend({
       // Configure which properties are to be merged
       mergedProperties: ['mergedProperty'],
 
@@ -414,7 +416,7 @@ class CoreObject {
     happen immediately.  It will set an isDestroying flag immediately.
 
     @method destroy
-    @return {EmberObject} receiver
+    @return {Ember.Object} receiver
     @public
   */
   destroy() {
@@ -466,9 +468,9 @@ class CoreObject {
     objects.
 
     ```javascript
-    import EmberObject from '@ember/object';
+    import Ember.Object from '@ember/object';
 
-    const Person = EmberObject.extend();
+    const Person = Ember.Object.extend();
     person = Person.create();
     person.toString(); //=> "<Person:ember1024>"
     ```
@@ -508,20 +510,25 @@ class CoreObject {
     return ret;
   }
 
+  __defineNonEnumerable(property) {
+    Object.defineProperty(this, property.name, property.descriptor);
+    //this[property.name] = property.descriptor.value;
+  }
+
   /**
     Creates a new subclass.
 
     ```javascript
-    import EmberObject from '@ember/object';
+    import Ember.Object from '@ember/object';
 
-    const Person = EmberObject.extend({
+    const Person = Ember.Object.extend({
       say(thing) {
         alert(thing);
        }
     });
     ```
 
-    This defines a new subclass of EmberObject: `Person`. It contains one method: `say()`.
+    This defines a new subclass of Ember.Object: `Person`. It contains one method: `say()`.
 
     You can also create a subclass from any existing class by calling its `extend()` method.
     For example, you might want to create a subclass of Ember's built-in `Component` class:
@@ -539,9 +546,9 @@ class CoreObject {
     implementation of your parent class by calling the special `_super()` method:
 
     ```javascript
-    import EmberObject from '@ember/object';
+    import Ember.Object from '@ember/object';
 
-    const Person = EmberObject.extend({
+    const Person = Ember.Object.extend({
       say(thing) {
         let name = this.get('name');
         alert(`${name} says: ${thing}`);
@@ -571,10 +578,10 @@ class CoreObject {
     You can also pass `Mixin` classes to add additional properties to the subclass.
 
     ```javascript
-    import EmberObject from '@ember/object';
+    import Ember.Object from '@ember/object';
     import Mixin from '@ember/object/mixin';
 
-    const Person = EmberObject.extend({
+    const Person = Ember.Object.extend({
       say(thing) {
         alert(`${this.get('name')} says: ${thing}`);
       }
@@ -613,9 +620,9 @@ class CoreObject {
     containing values to initialize the newly instantiated object with.
 
     ```javascript
-    import EmberObject from '@ember/object';
+    import Ember.Object from '@ember/object';
 
-    const Person = EmberObject.extend({
+    const Person = Ember.Object.extend({
       helloWorld() {
         alert(`Hi, my name is ${this.get('name')}`);
       }
@@ -667,9 +674,9 @@ class CoreObject {
     properties and functions:
 
     ```javascript
-    import EmberObject from '@ember/object';
+    import Ember.Object from '@ember/object';
 
-    const MyObject = EmberObject.extend({
+    const MyObject = Ember.Object.extend({
       name: 'an object'
     });
 
@@ -720,9 +727,9 @@ class CoreObject {
     Augments a constructor's own properties and functions:
 
     ```javascript
-    import EmberObject from '@ember/object';
+    import Ember.Object from '@ember/object';
 
-    const MyObject = EmberObject.extend({
+    const MyObject = Ember.Object.extend({
       name: 'an object'
     });
 
@@ -738,9 +745,9 @@ class CoreObject {
     These are only available on the class and not on any instance of that class.
 
     ```javascript
-    import EmberObject from '@ember/object';
+    import Ember.Object from '@ember/object';
 
-    const Person = EmberObject.extend({
+    const Person = Ember.Object.extend({
       name: '',
       sayHello() {
         alert(`Hello. My name is ${this.get('name')}`);
@@ -890,7 +897,7 @@ class CoreObject {
       // If the prototype mixin exists, apply it. In the case of native classes,
       // it will not exist (unless the class has been reopened).
       if (prototypeMixinMap.has(this)) {
-        this.PrototypeMixin.apply(p);
+        this.PrototypeMixin.applyPartial(p);
       }
     }
     return p;
@@ -917,7 +924,7 @@ function flattenProps(...props) {
     let properties = props[i];
 
     assert(
-      'EmberObject.create no longer supports mixing in other ' +
+      'Ember.Object.create no longer supports mixing in other ' +
         'definitions, use .extend & .create separately instead.',
       !(properties instanceof Mixin)
     );
@@ -951,8 +958,42 @@ function flattenProps(...props) {
   return initProperties;
 }
 
-function injectedPropertyAssertion() {
+const _computedProperties = computed(function() {
+  _hasCachedComputedProperties();
+  let proto = this.proto();
+  let property;
+  let properties = [];
+
+  for (let name in proto) {
+    property = proto[name];
+
+    if (property !== null && typeof property === 'object' && property.isDescriptor) {
+      properties.push({
+        name,
+        meta: property._meta
+      });
+    }
+  }
+  return properties;
+}).readOnly();
+
+defineProperty(CoreObject, '_computedProperties', _computedProperties);
+
+function injectedPropertyAssertion(debugContainerKey) {
   assert('Injected properties are invalid', validatePropertyInjections(this));
+
+  let [type] = debugContainerKey.split(':');
+  let proto = this.proto();
+
+  for (let key in proto) {
+    let desc = proto[key];
+    if (desc instanceof InjectedProperty) {
+      assert(
+        `Defining \`${key}\` as an injected controller property on a non-controller (\`${debugContainerKey}\`) is not allowed.`,
+        type === 'controller' || desc.type !== 'controller'
+      );
+    }
+  }
 }
 
 if (DEBUG) {

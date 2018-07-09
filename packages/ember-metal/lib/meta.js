@@ -81,7 +81,7 @@ export class Meta {
 
   get parent() {
     let parent = this._parent;
-    if (parent === null) {
+    if (parent === undefined) {
       let proto = getPrototypeOf(this.source);
       this._parent = parent = proto === null || proto === objectPrototype ? null : meta(proto);
     }

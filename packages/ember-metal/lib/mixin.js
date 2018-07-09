@@ -267,7 +267,6 @@ detectBinding('notbound');
 detectBinding('fooBinding');
 
 function connectBindings(obj, meta) {
-  console.log(obj, meta);
   // TODO Mixin.apply(instance) should disconnect binding if exists
   meta.forEachBindings((key, binding) => {
     if (binding) {
@@ -287,6 +286,7 @@ function connectBindings(obj, meta) {
 }
 
 function finishPartial(obj, meta) {
+
   connectBindings(obj, meta === undefined ? metaFor(obj) : meta);
   return obj;
 }
@@ -371,7 +371,6 @@ function applyMixin(obj, mixins, partial) {
     replaceObserversAndListeners(obj, key, value);
 
     if (detectBinding(key)) {
-      console.log('test');
       meta.writeBindings(key, value);
     }
 

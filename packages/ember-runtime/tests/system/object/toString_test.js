@@ -16,7 +16,7 @@ QUnit.module('system/object/toString', {
 });
 
 QUnit.test('NAME_KEY slot is present on Class', function() {
-  ok(EmberObject.extend().hasOwnProperty(NAME_KEY), 'Ember Class\'s have a NAME_KEY slot');
+  ok(NAME_KEY in EmberObject.extend(), 'Ember Class\'s have a NAME_KEY slot');
 });
 
 QUnit.test('toString() returns the same value if called twice', function() {
