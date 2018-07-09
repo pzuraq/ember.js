@@ -10,6 +10,7 @@ import Ember, {
 } from 'ember-metal'; // Preloaded into namespaces
 import { context } from 'ember-environment';
 import { NAME_KEY } from 'ember-utils';
+import CoreObject from './core_object';
 import EmberObject from './object';
 
 let searchDisabled = false;
@@ -111,7 +112,7 @@ function processNamespace(paths, root, seen) {
     paths[idx] = key;
 
     // If we have found an unprocessed class
-    if (obj && obj.toString === classToString && !obj[NAME_KEY]) {
+    if (obj && obj.toString === classToString && !Object.hasOwnProperty.call(obj, NAME_KEY)) {
       // Replace the class' `toString` with the dot-separated path
       // and set its `NAME_KEY`
       obj[NAME_KEY] = paths.join('.');
@@ -166,7 +167,7 @@ function findNamespaces() {
 function superClassString(mixin) {
   let superclass = mixin.superclass;
   if (superclass) {
-    if (superclass[NAME_KEY]) {
+    if (Object.hasOwnProperty.call(superclass, NAME_KEY)) {
       return superclass[NAME_KEY];
     }
     return superClassString(superclass);
@@ -179,9 +180,8 @@ function calculateToString(target) {
   if (!searchDisabled) {
     processAllNamespaces();
     // can also be set by processAllNamespaces
-    str = target[NAME_KEY];
-    if (str) {
-      return str;
+    if (Object.hasOwnProperty.call(target, NAME_KEY)) {
+      return target[NAME_KEY];
     } else {
       str = superClassString(target);
       str = str ? `(subclass of ${str})` : str;
@@ -195,8 +195,9 @@ function calculateToString(target) {
 }
 
 function classToString() {
-  let name = this[NAME_KEY];
-  if (name) { return name; }
+  if (Object.hasOwnProperty.call(this, NAME_KEY)) {
+    return this[NAME_KEY];
+  }
 
   return (this[NAME_KEY] = calculateToString(this));
 }
@@ -223,6 +224,7 @@ function processAllNamespaces() {
   }
 }
 
+CoreObject.toString = classToString;
 Mixin.prototype.toString = classToString; // ES6TODO: altering imported objects. SBB.
 
 export default Namespace;

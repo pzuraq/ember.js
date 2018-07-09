@@ -58,7 +58,7 @@ const EmberObject = CoreObject.extend(Observable, {
   })
 });
 
-EmberObject.toString = () => 'Ember.Object';
+EmberObject[NAME_KEY] = 'Ember.Object';
 
 export let FrameworkObject = EmberObject;
 
