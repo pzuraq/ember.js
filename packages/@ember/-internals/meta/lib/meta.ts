@@ -521,26 +521,25 @@ export class Meta {
   }
 
   matchingListeners(event: string) {
-    let pointer: Meta | null = this;
     // fix type
     let result: any[] | undefined;
-    while (pointer !== null) {
-      let listeners = pointer._listeners;
-      if (listeners !== undefined) {
-        for (let index = 0; index < listeners.length; index++) {
-          let listener = listeners[index];
 
-          if (listener.event === event) {
-            result = result || [];
-            pushUniqueListener(result, listener);
-          }
+    if (!this._listenersFinalized) {
+      this._finalizeListeners();
+    }
+
+    let listeners = this._listeners;
+    if (listeners !== undefined) {
+      for (let index = 0; index < listeners.length; index++) {
+        let listener = listeners[index];
+
+        if (listener.event === event) {
+          result = result || [];
+          pushUniqueListener(result, listener);
         }
       }
-      if (pointer._listenersFinalized) {
-        break;
-      }
-      pointer = pointer.parent;
     }
+
     return result;
   }
 }
