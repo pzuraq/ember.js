@@ -39,6 +39,27 @@ const SOURCE_DESTROYING = 1 << 1;
 const SOURCE_DESTROYED = 1 << 2;
 const META_DESTROYED = 1 << 3;
 
+const enum ListenerKind {
+  ADD = 0,
+  ONCE = 1,
+}
+
+interface StringListener {
+  event: string;
+  target: null;
+  method: string;
+  kind: ListenerKind.ADD | ListenerKind.ONCE;
+}
+
+interface FunctionListener {
+  event: string;
+  target: object | null;
+  method: Function;
+  kind: ListenerKind.ADD | ListenerKind.ONCE;
+}
+
+type Listener = StringListener | FunctionListener;
+
 export class Meta {
   _descriptors: any | undefined;
   _watching: any | undefined;
@@ -435,16 +456,16 @@ export class Meta {
     }
   }
 
-  addToListeners(
-    eventName: string,
-    target: object | null,
-    method: Function | string,
-    once: boolean
-  ) {
+  addToListeners(event: string, target: object | null, method: Function | string, once: boolean) {
     if (this._listeners === undefined) {
       this._listeners = [];
     }
-    this._listeners.push(eventName, target, method, once);
+    this._listeners.push({
+      event,
+      target,
+      method,
+      kind: once ? ListenerKind.ONCE : ListenerKind.ADD,
+    } as Listener);
   }
 
   _finalizeListeners() {
@@ -468,24 +489,26 @@ export class Meta {
     this._listenersFinalized = true;
   }
 
-  removeFromListeners(eventName: string, target: any, method: Function | string): void {
+  removeFromListeners(event: string, target: any, method: Function | string): void {
     let pointer: Meta | null = this;
     while (pointer !== null) {
       let listeners = pointer._listeners;
       if (listeners !== undefined) {
-        for (let index = listeners.length - 4; index >= 0; index -= 4) {
+        for (let index = listeners.length - 1; index >= 0; index--) {
+          let listener = listeners[index];
+
           if (
-            listeners[index] === eventName &&
-            (!method || (listeners[index + 1] === target && listeners[index + 2] === method))
+            listener.event === event &&
+            (!method || (listener.target === target && listener.method === method))
           ) {
             if (pointer === this) {
-              listeners.splice(index, 4); // we are modifying our own list, so we edit directly
+              listeners.splice(index, 1); // we are modifying our own list, so we edit directly
             } else {
               // we are trying to remove an inherited listener, so we do
               // just-in-time copying to detach our own listeners from
               // our inheritance chain.
               this._finalizeListeners();
-              return this.removeFromListeners(eventName, target, method);
+              return this.removeFromListeners(event, target, method);
             }
           }
         }
@@ -497,17 +520,19 @@ export class Meta {
     }
   }
 
-  matchingListeners(eventName: string) {
+  matchingListeners(event: string) {
     let pointer: Meta | null = this;
     // fix type
     let result: any[] | undefined;
     while (pointer !== null) {
       let listeners = pointer._listeners;
       if (listeners !== undefined) {
-        for (let index = 0; index < listeners.length; index += 4) {
-          if (listeners[index] === eventName) {
+        for (let index = 0; index < listeners.length; index++) {
+          let listener = listeners[index];
+
+          if (listener.event === event) {
             result = result || [];
-            pushUniqueListener(result, listeners, index);
+            pushUniqueListener(result, listener);
           }
         }
       }
@@ -812,13 +837,15 @@ export { counters };
  allocations, without even bothering to do deduplication -- we can
  save that for dispatch time, if an event actually happens.
  */
-function pushUniqueListener(destination: any[], source: any[], index: number) {
-  let target = source[index + 1];
-  let method = source[index + 2];
+function pushUniqueListener(destination: any[], listener: Listener) {
+  let target = listener.target;
+  let method = listener.method;
+
   for (let destinationIndex = 0; destinationIndex < destination.length; destinationIndex += 3) {
     if (destination[destinationIndex] === target && destination[destinationIndex + 1] === method) {
       return;
     }
   }
-  destination.push(target, method, source[index + 3]);
+
+  destination.push(target, method, listener.kind === ListenerKind.ONCE);
 }
