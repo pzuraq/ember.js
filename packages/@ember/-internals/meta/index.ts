@@ -6,6 +6,7 @@ export {
   Meta,
   meta,
   MetaCounters,
+  ListenerKind,
   peekMeta,
   setMeta,
   UNDEFINED,

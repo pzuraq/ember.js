@@ -2,7 +2,7 @@
 @module @ember/object
 */
 import { ENV } from '@ember/-internals/environment';
-import { Meta, meta as metaFor, peekMeta } from '@ember/-internals/meta';
+import { Meta, meta as metaFor, peekMeta, ListenerKind } from '@ember/-internals/meta';
 import { setListeners } from '@ember/-internals/utils';
 import { assert, deprecate } from '@ember/debug';
 import { DID_INIT_ATTRS } from '@ember/deprecated-features';
@@ -99,13 +99,7 @@ export function removeListener(
     target = null;
   }
 
-  let m = metaFor(obj);
-
-  if (!method) {
-    m.removeAllListeners(eventName);
-  } else {
-    m.removeFromListeners(eventName, target, method);
-  }
+  metaFor(obj).removeFromListeners(eventName, target, method!);
 }
 
 /**
@@ -139,11 +133,10 @@ export function sendEvent(
     return false;
   }
 
-  for (let i = actions.length - 3; i >= 0; i -= 3) {
+  for (let i = actions.length - 1; i >= 0; i--) {
     // looping in reverse for once listeners
-    let target = actions[i] as any | null;
-    let method = actions[i + 1] as string | Function;
-    let once = actions[i + 2] as boolean;
+    let { target, method, kind } = actions[i];
+    let once = kind === ListenerKind.ONCE;
 
     if (!method) {
       continue;

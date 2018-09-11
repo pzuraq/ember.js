@@ -8,8 +8,8 @@ function sortedListenersFor(obj, eventName) {
   let listeners = peekMeta(obj).matchingListeners(eventName) || [];
 
   let keys = [];
-  for (let i = 0; i < listeners.length; i += 3) {
-    keys.push(listeners[i + 1]);
+  for (let i = 0; i < listeners.length; i++) {
+    keys.push(listeners[i].method);
   }
   return keys.sort();
 }

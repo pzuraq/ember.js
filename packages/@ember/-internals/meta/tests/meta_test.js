@@ -1,5 +1,5 @@
 import { AbstractTestCase, moduleFor } from 'internal-test-helpers';
-import { meta, counters } from '..';
+import { meta } from '..';
 
 moduleFor(
   'Ember.meta',
@@ -38,8 +38,8 @@ moduleFor(
       let m = meta({});
       m.addToListeners('hello', t, 'm', 0);
       let matching = m.matchingListeners('hello');
-      assert.equal(matching.length, 3);
-      assert.equal(matching[0], t);
+      assert.equal(matching.length, 1);
+      assert.equal(matching[0].target, t);
       m.removeFromListeners('hello', t, 'm');
       matching = m.matchingListeners('hello');
       assert.equal(matching, undefined);
@@ -55,15 +55,15 @@ moduleFor(
       let m = meta(child);
 
       let matching = m.matchingListeners('hello');
-      assert.equal(matching.length, 3);
-      assert.equal(matching[0], target);
-      assert.equal(matching[1], 'm');
-      assert.equal(matching[2], 0);
+      assert.equal(matching.length, 1);
+      assert.equal(matching[0].target, target);
+      assert.equal(matching[0].method, 'm');
+      assert.equal(matching[0].kind, 0);
       m.removeFromListeners('hello', target, 'm');
       matching = m.matchingListeners('hello');
       assert.equal(matching, undefined);
       matching = parentMeta.matchingListeners('hello');
-      assert.equal(matching.length, 3);
+      assert.equal(matching.length, 1);
     }
 
     ['@test meta.listeners deduplication'](assert) {
@@ -72,61 +72,8 @@ moduleFor(
       m.addToListeners('hello', t, 'm', 0);
       m.addToListeners('hello', t, 'm', 0);
       let matching = m.matchingListeners('hello');
-      assert.equal(matching.length, 3);
-      assert.equal(matching[0], t);
-    }
-
-    ['@test meta.listeners reopen after flatten'](assert) {
-      // Ensure counter is zeroed
-      counters.reopensAfterFlatten = 0;
-
-      class Class1 {}
-      let class1Meta = meta(Class1.prototype);
-      class1Meta.addToListeners('hello', null, 'm', 0);
-
-      let instance1 = new Class1();
-      let m1 = meta(instance1);
-
-      class Class2 {}
-      let class2Meta = meta(Class2.prototype);
-      class2Meta.addToListeners('hello', null, 'm', 0);
-
-      let instance2 = new Class2();
-      let m2 = meta(instance2);
-
-      m1.matchingListeners('hello');
-      m2.matchingListeners('hello');
-
-      assert.equal(counters.reopensAfterFlatten, 0, 'no reopen calls yet');
-
-      m1.addToListeners('world', null, 'm', 0);
-      m2.addToListeners('world', null, 'm', 0);
-      m1.matchingListeners('world');
-      m2.matchingListeners('world');
-
-      assert.equal(
-        counters.reopensAfterFlatten,
-        0,
-        'no reopen calls after mutating leaf listeners'
-      );
-
-      class1Meta.removeFromListeners('hello', null, 'm');
-      class2Meta.removeFromListeners('hello', null, 'm');
-      m1.matchingListeners('hello');
-      m2.matchingListeners('hello');
-
-      assert.equal(counters.reopensAfterFlatten, 1, 'one reopen call after mutating parents');
-
-      class1Meta.addToListeners('hello', null, 'm', 0);
-      m1.matchingListeners('hello');
-      class2Meta.addToListeners('hello', null, 'm', 0);
-      m2.matchingListeners('hello');
-
-      assert.equal(
-        counters.reopensAfterFlatten,
-        2,
-        'one reopen call after mutating parents and flattening out of order'
-      );
+      assert.equal(matching.length, 1);
+      assert.equal(matching[0].target, t);
     }
 
     ['@test meta.writeWatching issues useful error after destroy']() {
