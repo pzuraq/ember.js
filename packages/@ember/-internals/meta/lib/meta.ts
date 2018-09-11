@@ -14,6 +14,10 @@ export interface MetaCounters {
   deleteCalls: number;
   metaCalls: number;
   metaInstantiated: number;
+  addToListenersCalls: number;
+  removeFromListenersCalls: number;
+  removeAllListenersCalls: number;
+  listenersInherited: number;
   reopensAfterFlatten: number;
 }
 
@@ -26,6 +30,10 @@ if (DEBUG) {
     deleteCalls: 0,
     metaCalls: 0,
     metaInstantiated: 0,
+    addToListenersCalls: 0,
+    removeFromListenersCalls: 0,
+    removeAllListenersCalls: 0,
+    listenersInherited: 0,
     reopensAfterFlatten: 0,
   };
 }
@@ -480,14 +488,26 @@ export class Meta {
     method: Function | string,
     once: boolean
   ) {
+    if (DEBUG) {
+      counters!.addToListenersCalls++;
+    }
+
     this.pushListener(eventName, target, method, once ? ListenerKind.ONCE : ListenerKind.ADD);
   }
 
   removeFromListeners(eventName: string, target: object | null, method: Function | string): void {
+    if (DEBUG) {
+      counters!.removeFromListenersCalls++;
+    }
+
     this.pushListener(eventName, target, method, ListenerKind.REMOVE);
   }
 
   removeAllListeners(event: string) {
+    if (DEBUG) {
+      counters!.removeAllListenersCalls++;
+    }
+
     let listeners = this.writableListeners();
     let inheritedEnd = this._inheritedEnd;
     // remove all listeners of event name
@@ -623,6 +643,10 @@ export class Meta {
             );
 
             if (index === -1) {
+              if (DEBUG) {
+                counters!.listenersInherited++;
+              }
+
               listeners.unshift(listener);
               this._inheritedEnd++;
             }
