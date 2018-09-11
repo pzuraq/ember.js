@@ -375,6 +375,7 @@ moduleFor(
       assert.equal(someEventB, 0);
 
       let b = new B();
+      debugger
       b.set('foo', 'something');
       assert.equal(fooDidChangeBase, 1);
       assert.equal(fooDidChangeA, 1);

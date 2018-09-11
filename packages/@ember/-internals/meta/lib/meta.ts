@@ -530,23 +530,24 @@ export class Meta {
         for (let index = parentListeners.length - 1; index >= 0; index--) {
           let listener = parentListeners[index];
 
-          // check that the listener matches the removal, and that we haven't pushed a
-          // removal listener for this event before. If not, push a REMOVE to block inheritance.
+          // check that the listener matches the removal
           if (
             listener.event === event &&
-            (!method || (listener.target === target && listener.method === method)) &&
-            indexOfListener(parentListeners, event, listener.target, listener.method) === -1
+            (!method || (listener.target === target && listener.method === method))
           ) {
             if (ownListeners === undefined) {
               ownListeners = this._listeners = [];
             }
 
-            ownListeners.unshift({
-              event,
-              target: listener.target,
-              method: listener.method,
-              kind: ListenerKind.REMOVE,
-            } as Listener);
+            // check that we haven't pushed a REMOVE listener for this target/method already
+            if (indexOfListener(ownListeners, event, listener.target, listener.method) === -1) {
+              ownListeners.unshift({
+                event,
+                target: listener.target,
+                method: listener.method,
+                kind: ListenerKind.REMOVE,
+              } as Listener);
+            }
           }
         }
       }
