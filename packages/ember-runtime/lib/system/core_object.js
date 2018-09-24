@@ -12,7 +12,7 @@ import {
   makeArray,
   GUID_KEY_PROPERTY,
   symbol,
-  NAME_KEY,
+  getName,
   GUID_KEY,
   HAS_NATIVE_PROXY,
   isInternalSymbol,
@@ -49,15 +49,27 @@ const reopen = Mixin.prototype.reopen;
 
 export const POST_INIT = symbol('POST_INIT');
 
-function makeCtor() {
+function makeCtor(base) {
   // Note: avoid accessing any properties on the object since it makes the
   // method a lot faster. This is glue code so we want it to be as fast as
   // possible.
 
   let wasApplied = false;
-  let initFactory;
+  let Class;
 
-  class Class {
+  if (base) {
+    Class = class extends base {
+    constructor(properties) {
+        if (!wasApplied) {
+          Class.proto(); // prepare prototype...
+        }
+
+        super(properties);
+      }
+    };
+  } else {
+  let initFactory;
+    Class = class {
     constructor(properties) {
       let self = this;
 
@@ -227,17 +239,21 @@ function makeCtor() {
       }
     }
 
-    static willReopen() {
+      static _initFactory(factory) {
+        initFactory = factory;
+      }
+    };
+  }
+
+  Class.willReopen = () => {
       if (wasApplied) {
         Class.PrototypeMixin = Mixin.create(Class.PrototypeMixin);
       }
 
       wasApplied = false;
-    }
+  };
 
-    static _initFactory(factory) { initFactory = factory; }
-
-    static proto() {
+  Class.proto = () => {
       let superclass = Class.superclass;
       if (superclass) { superclass.proto(); }
 
@@ -246,9 +262,8 @@ function makeCtor() {
         Class.PrototypeMixin.applyPartial(Class.prototype);
       }
 
-      return this.prototype;
-    }
-  }
+    return Class.prototype;
+  };
 
   Class.toString = Mixin.prototype.toString;
 
@@ -598,7 +613,9 @@ CoreObject.PrototypeMixin = Mixin.create({
     let hasToStringExtension = typeof this.toStringExtension === 'function';
     let extension = hasToStringExtension ? `:${this.toStringExtension()}` : '';
 
-    let ret = `<${this[NAME_KEY] || FACTORY_FOR.get(this) || this.constructor.toString()}:${guidFor(this)}${extension}>`;
+    let ret = `<${getName(this) ||
+      FACTORY_FOR.get(this) ||
+      this.constructor.toString()}:${guidFor(this)}${extension}>`;
 
     return ret;
   }
@@ -613,7 +630,6 @@ let ClassMixinProps = {
   isClass: true,
 
   isMethod: false,
-  [NAME_KEY]: null,
   [GUID_KEY]: null,
   /**
     Creates a new subclass.
@@ -710,8 +726,7 @@ let ClassMixinProps = {
     @public
   */
   extend() {
-    let Class = makeCtor();
-    let proto;
+    let Class = makeCtor(this);
     Class.ClassMixin = Mixin.create(this.ClassMixin);
     Class.PrototypeMixin = Mixin.create(this.PrototypeMixin);
 
@@ -723,8 +738,7 @@ let ClassMixinProps = {
     Class.superclass = this;
     Class.__super__  = this.prototype;
 
-    proto = Class.prototype = Object.create(this.prototype);
-    proto.constructor = Class;
+    let proto = Class.prototype;
     generateGuid(proto);
     meta(proto).proto = proto; // this will disable observers on prototype
 

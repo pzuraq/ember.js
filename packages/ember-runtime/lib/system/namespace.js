@@ -9,7 +9,7 @@ import {
   clearUnprocessedMixins,
 } from 'ember-metal'; // Preloaded into namespaces
 import { context } from 'ember-environment';
-import { NAME_KEY } from 'ember-utils';
+import { getName, setName } from 'ember-utils';
 import EmberObject from './object';
 
 let searchDisabled = false;
@@ -53,7 +53,7 @@ const Namespace = EmberObject.extend({
     if (name) { return name; }
 
     findNamespaces();
-    return this[NAME_KEY];
+    return getName(this);
   },
 
   nameClasses() {
@@ -109,10 +109,10 @@ function processNamespace(paths, root, seen) {
     paths[idx] = key;
 
     // If we have found an unprocessed class
-    if (obj && obj.toString === classToString && !obj[NAME_KEY]) {
+    if (obj && obj.toString === classToString && !getName(obj)) {
       // Replace the class' `toString` with the dot-separated path
       // and set its `NAME_KEY`
-      obj[NAME_KEY] = paths.join('.');
+      setName(obj, paths.join('.'));
 
     // Support nested namespaces
     } else if (obj && obj.isNamespace) {
@@ -156,7 +156,7 @@ function findNamespaces() {
     }
     let obj = tryIsNamespace(lookup, key);
     if (obj) {
-      obj[NAME_KEY] = key;
+      setName(obj, key);
     }
   }
 }
@@ -164,8 +164,8 @@ function findNamespaces() {
 function superClassString(mixin) {
   let superclass = mixin.superclass;
   if (superclass) {
-    if (superclass[NAME_KEY]) {
-      return superclass[NAME_KEY];
+    if (getName(superclass)) {
+      return getName(superclass);
     }
     return superClassString(superclass);
   }
@@ -177,7 +177,7 @@ function calculateToString(target) {
   if (!searchDisabled) {
     processAllNamespaces();
     // can also be set by processAllNamespaces
-    str = target[NAME_KEY];
+    str = getName(target);
     if (str) {
       return str;
     } else {
@@ -193,10 +193,11 @@ function calculateToString(target) {
 }
 
 function classToString() {
-  let name = this[NAME_KEY];
+  let name = getName(this);
   if (name) { return name; }
 
-  return (this[NAME_KEY] = calculateToString(this));
+  setName(this, calculateToString(this));
+  return getName(this);
 }
 
 function processAllNamespaces() {
