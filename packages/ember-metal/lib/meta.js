@@ -60,6 +60,9 @@ export class Meta {
     this._chains = undefined;
     this._tag = undefined;
     this._tags = undefined;
+    this._listenersVersion = 1;
+    this._inheritedEnd = 0;
+    this._flattenedVersion = 0;
 
     // initial value for all flags right now is false
     // see FLAGS const for detailed list of flags used

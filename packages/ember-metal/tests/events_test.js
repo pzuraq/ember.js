@@ -29,13 +29,18 @@ QUnit.test('listener should receive event - removing should remove', function(as
 });
 
 QUnit.test('listeners should be inherited', function(assert) {
-  let obj = {};
+  class A {}
+  class B extends A {}
+
   let count = 0;
-  let F = function() { count++; };
+  let F = function() {
+    count++;
+  };
 
-  addListener(obj, 'event!', F);
+  addListener(A.prototype, 'event!', F);
 
-  let obj2 = Object.create(obj);
+  let obj = new A();
+  let obj2 = new B();
 
   assert.equal(count, 0, 'nothing yet');
 

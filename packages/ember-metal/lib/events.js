@@ -88,9 +88,16 @@ export function removeListener(obj, eventName, target, method) {
     target = null;
   }
 
-  let func = ('function' === typeof obj.didRemoveListener) ?
-    obj.didRemoveListener.bind(obj) : ()=> {};
-  metaFor(obj).removeFromListeners(eventName, target, method, func);
+  // let func = ('function' === typeof obj.didRemoveListener) ?
+  //   obj.didRemoveListener.bind(obj) : ()=> {};
+  // metaFor(obj).removeFromListeners(eventName, target, method, func);
+
+  let m = metaFor(obj);
+  if (!method) {
+    m.removeAllListeners(eventName);
+  } else {
+    m.removeFromListeners(eventName, target, method);
+  }
 }
 
 /**

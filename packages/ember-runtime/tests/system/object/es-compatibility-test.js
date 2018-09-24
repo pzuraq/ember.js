@@ -1,5 +1,12 @@
 import EmberObject from '../../../system/object';
-import { Mixin } from 'ember-metal';
+import {
+  Mixin,
+  observer,
+  on,
+  removeObserver,
+  removeListener,
+  sendEvent,
+} from 'ember-metal';
 
 QUnit.module('EmberObject ES Compatibility');
 
@@ -121,6 +128,81 @@ QUnit.test('extending an ES subclass of EmberObject', function(assert) {
   calls = [];
   new MyObject();
   assert.deepEqual(calls, ['constructor', 'init'], 'constructor then init called (new)');
+});
+
+QUnit.test('@observes / removeObserver on / removeListener interop', function(assert) {
+  let fooDidChangeBase = 0;
+  let fooDidChangeA = 0;
+  let fooDidChangeB = 0;
+  let someEventBase = 0;
+  let someEventA = 0;
+  let someEventB = 0;
+
+  class A extends EmberObject.extend({
+    fooDidChange: observer('foo', function() {
+      fooDidChangeBase++;
+    }),
+     onSomeEvent: on('someEvent', function() {
+      someEventBase++;
+    }),
+  }) {
+    init() {
+      super.init();
+      this.foo = 'bar';
+    }
+     fooDidChange() {
+      super.fooDidChange();
+      fooDidChangeA++;
+    }
+     onSomeEvent() {
+      super.onSomeEvent();
+      someEventA++;
+    }
+  }
+
+  class B extends A {
+    fooDidChange() {
+      super.fooDidChange();
+      fooDidChangeB++;
+    }
+     onSomeEvent() {
+      super.onSomeEvent();
+      someEventB++;
+    }
+  }
+
+  removeObserver(B.prototype, 'foo', null, 'fooDidChange');
+  removeListener(B.prototype, 'someEvent', null, 'onSomeEvent');
+
+  assert.equal(fooDidChangeBase, 0);
+  assert.equal(fooDidChangeA, 0);
+  assert.equal(fooDidChangeB, 0);
+
+  assert.equal(someEventBase, 0);
+  assert.equal(someEventA, 0);
+  assert.equal(someEventB, 0);
+
+  let a = new A();
+  a.set('foo', 'something');
+  assert.equal(fooDidChangeBase, 1);
+  assert.equal(fooDidChangeA, 1);
+  assert.equal(fooDidChangeB, 0);
+
+  sendEvent(a, 'someEvent');
+  assert.equal(someEventBase, 1);
+  assert.equal(someEventA, 1);
+  assert.equal(someEventB, 0);
+
+  let b = new B();
+  b.set('foo', 'something');
+  assert.equal(fooDidChangeBase, 1);
+  assert.equal(fooDidChangeA, 1);
+  assert.equal(fooDidChangeB, 0);
+
+  sendEvent(b, 'someEvent');
+  assert.equal(someEventBase, 1);
+  assert.equal(someEventA, 1);
+  assert.equal(someEventB, 0);
 });
 
 // TODO: Needs to be fixed. Currently only `init` is called.
