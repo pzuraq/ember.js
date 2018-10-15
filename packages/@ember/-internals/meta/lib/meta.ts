@@ -720,27 +720,51 @@ export class Meta {
     return this._listeners;
   }
 
+  // matchingListeners(eventName: string): (string | boolean | object | null)[] | undefined | void {
+  //   let listeners = this.flattenedListeners();
+
+  //   if (listeners !== undefined) {
+  //     let result = [];
+
+  //     for (let index = 0; index < listeners.length; index++) {
+  //       let listener = listeners[index];
+
+  //       // REMOVE and REMOVE_ALL listeners are placeholders that tell us not to
+  //       // inherit, so they never match. Only ADD and ONCE can match.
+  //       if (
+  //         listener.event === eventName &&
+  //         (listener.kind === ListenerKind.ADD || listener.kind === ListenerKind.ONCE)
+  //       ) {
+  //         result.push(listener.target!, listener.method, listener.kind === ListenerKind.ONCE);
+  //       }
+  //     }
+
+  //     return result.length === 0 ? undefined : result;
+  //   }
+  // }
+
   matchingListeners(eventName: string): (string | boolean | object | null)[] | undefined | void {
-    let listeners = this.flattenedListeners();
+    let pointer: Meta | null = this;
+    // fix type
+    let result: any[] | undefined;
+    while (pointer !== null) {
+      let listeners = pointer._listeners;
+      if (listeners !== undefined) {
+        for (let index = 0; index < listeners.length; index += 1) {
+          let listener = listeners[index];
 
-    if (listeners !== undefined) {
-      let result = [];
-
-      for (let index = 0; index < listeners.length; index++) {
-        let listener = listeners[index];
-
-        // REMOVE and REMOVE_ALL listeners are placeholders that tell us not to
-        // inherit, so they never match. Only ADD and ONCE can match.
-        if (
-          listener.event === eventName &&
-          (listener.kind === ListenerKind.ADD || listener.kind === ListenerKind.ONCE)
-        ) {
-          result.push(listener.target!, listener.method, listener.kind === ListenerKind.ONCE);
+          if (listener.event === eventName && (listener.kind === ListenerKind.ADD || listener.kind === ListenerKind.ONCE)) {
+            result = result || [];
+            pushUniqueListener(result, listener);
+          }
         }
       }
-
-      return result.length === 0 ? undefined : result;
+      if (pointer._isFlattened()) {
+        break;
+      }
+      pointer = pointer.parent;
     }
+    return result;
   }
 }
 
@@ -1008,4 +1032,13 @@ function indexOfListener(
     }
   }
   return -1;
+}
+
+function pushUniqueListener(destination: any[], listener: Listener) {
+  for (let destinationIndex = 0; destinationIndex < destination.length; destinationIndex += 3) {
+    if (destination[destinationIndex] === listener.target && destination[destinationIndex + 1] === listener.method) {
+      return;
+    }
+  }
+  destination.push(listener.target, listener.method, listener.kind === ListenerKind.ONCE);
 }
