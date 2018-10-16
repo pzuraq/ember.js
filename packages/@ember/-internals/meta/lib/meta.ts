@@ -497,7 +497,16 @@ export class Meta {
       counters!.addToListenersCalls++;
     }
 
-    this.pushListener(eventName, target, method, once ? ListenerKind.ONCE : ListenerKind.ADD);
+    let listeners = this.writableListeners();
+
+    listeners.push({
+      event: eventName,
+      target,
+      method,
+      kind: once ? ListenerKind.ONCE : ListenerKind.ADD,
+    } as Listener);
+
+    // this.pushListener(eventName, target, method, once ? ListenerKind.ONCE : ListenerKind.ADD);
   }
 
   removeFromListeners(eventName: string, target: object | null, method: Function | string): void {
